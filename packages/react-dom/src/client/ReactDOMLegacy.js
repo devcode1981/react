@@ -9,6 +9,7 @@
 
 import type {Container} from './ReactDOMHostConfig';
 import type {RootType} from './ReactDOMRoot';
+import type {FiberRoot} from 'react-reconciler/src/ReactInternalTypes';
 import type {ReactNodeList} from 'shared/ReactTypes';
 
 import {
@@ -31,8 +32,8 @@ import {
   getPublicRootInstance,
   findHostInstance,
   findHostInstanceWithWarning,
-} from 'react-reconciler/inline.dom';
-import getComponentName from 'shared/getComponentName';
+} from 'react-reconciler/src/ReactFiberReconciler';
+import getComponentNameFromType from 'shared/getComponentNameFromType';
 import invariant from 'shared/invariant';
 import ReactSharedInternals from 'shared/ReactSharedInternals';
 import {has as hasInstance} from 'shared/ReactInstanceMap';
@@ -143,7 +144,7 @@ function legacyCreateRootFromDOMContainer(
       warnedAboutHydrateAPI = true;
       console.warn(
         'render(): Calling ReactDOM.render() to hydrate server-rendered markup ' +
-          'will stop working in React v17. Replace the ReactDOM.render() call ' +
+          'will stop working in React v18. Replace the ReactDOM.render() call ' +
           'with ReactDOM.hydrate() if you want React to attach to the server HTML.',
       );
     }
@@ -184,10 +185,8 @@ function legacyRenderSubtreeIntoContainer(
     warnOnInvalidCallback(callback === undefined ? null : callback, 'render');
   }
 
-  // TODO: Without `any` type, Flow says "Property cannot be accessed on any
-  // member of intersection type." Whyyyyyy.
-  let root: RootType = (container._reactRootContainer: any);
-  let fiberRoot;
+  let root = container._reactRootContainer;
+  let fiberRoot: FiberRoot;
   if (!root) {
     // Initial mount
     root = container._reactRootContainer = legacyCreateRootFromDOMContainer(
@@ -225,7 +224,7 @@ export function findDOMNode(
   componentOrElement: Element | ?React$Component<any, any>,
 ): null | Element | Text {
   if (__DEV__) {
-    let owner = (ReactCurrentOwner.current: any);
+    const owner = (ReactCurrentOwner.current: any);
     if (owner !== null && owner.stateNode !== null) {
       const warnedAboutRefsInRender = owner.stateNode._warnedAboutRefsInRender;
       if (!warnedAboutRefsInRender) {
@@ -235,7 +234,7 @@ export function findDOMNode(
             'never access something that requires stale data from the previous ' +
             'render, such as refs. Move this logic to componentDidMount and ' +
             'componentDidUpdate instead.',
-          getComponentName(owner.type) || 'A component',
+          getComponentNameFromType(owner.type) || 'A component',
         );
       }
       owner.stateNode._warnedAboutRefsInRender = true;

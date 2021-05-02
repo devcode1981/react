@@ -11,6 +11,7 @@ describe('StoreStressConcurrent', () => {
   let React;
   let ReactDOM;
   let act;
+  let actAsync;
   let bridge;
   let store;
   let print;
@@ -23,10 +24,14 @@ describe('StoreStressConcurrent', () => {
     React = require('react');
     ReactDOM = require('react-dom');
     act = require('./utils').act;
+    // TODO: Figure out recommendation for concurrent mode tests, then replace
+    // this helper with the real thing.
+    actAsync = require('./utils').actAsync;
 
     print = require('./storeSerializer').print;
   });
 
+  // TODO: Remove this in favor of @gate pragma
   if (!__EXPERIMENTAL__) {
     it("empty test so Jest doesn't complain", () => {});
     return;
@@ -42,7 +47,7 @@ describe('StoreStressConcurrent', () => {
       // We'll be manually flipping this component back and forth in the test.
       // We only do this for a single node in order to verify that DevTools
       // can handle a subtree switching alternates while other subtrees are memoized.
-      let [showX, _setShowX] = React.useState(false);
+      const [showX, _setShowX] = React.useState(false);
       setShowX = _setShowX;
       return showX ? <X /> : 'c';
     };
@@ -62,7 +67,7 @@ describe('StoreStressConcurrent', () => {
     // 1. Render a normal version of [a, b, c, d, e].
     let container = document.createElement('div');
     // $FlowFixMe
-    let root = ReactDOM.createRoot(container);
+    let root = ReactDOM.unstable_createRoot(container);
     act(() => root.render(<Parent>{[a, b, c, d, e]}</Parent>));
     expect(store).toMatchInlineSnapshot(
       `
@@ -115,7 +120,7 @@ describe('StoreStressConcurrent', () => {
     // These cases are picked so that rendering them sequentially in the same
     // container results in a combination of mounts, updates, unmounts, and reorders.
     // prettier-ignore
-    let cases = [
+    const cases = [
       [a, b, c, d, e],
       [[a], b, c, d, e],
       [[a, b], c, d, e],
@@ -146,7 +151,7 @@ describe('StoreStressConcurrent', () => {
       // Ensure fresh mount.
       container = document.createElement('div');
       // $FlowFixMe
-      root = ReactDOM.createRoot(container);
+      root = ReactDOM.unstable_createRoot(container);
 
       // Verify mounting 'abcde'.
       act(() => root.render(<Parent>{cases[i]}</Parent>));
@@ -176,7 +181,7 @@ describe('StoreStressConcurrent', () => {
     // There'll be no unmounting until the very end.
     container = document.createElement('div');
     // $FlowFixMe
-    root = ReactDOM.createRoot(container);
+    root = ReactDOM.unstable_createRoot(container);
     for (let i = 0; i < cases.length; i++) {
       // Verify mounting 'abcde'.
       act(() => root.render(<Parent>{cases[i]}</Parent>));
@@ -215,7 +220,7 @@ describe('StoreStressConcurrent', () => {
     const e = <E key="e" />;
 
     // prettier-ignore
-    let steps = [
+    const steps = [
       a,
       b,
       c,
@@ -239,10 +244,10 @@ describe('StoreStressConcurrent', () => {
     };
 
     // 1. Capture the expected render result.
-    let snapshots = [];
+    const snapshots = [];
     let container = document.createElement('div');
     // $FlowFixMe
-    let root = ReactDOM.createRoot(container);
+    let root = ReactDOM.unstable_createRoot(container);
     for (let i = 0; i < steps.length; i++) {
       act(() => root.render(<Root>{steps[i]}</Root>));
       // We snapshot each step once so it doesn't regress.
@@ -315,7 +320,7 @@ describe('StoreStressConcurrent', () => {
       for (let j = 0; j < steps.length; j++) {
         container = document.createElement('div');
         // $FlowFixMe
-        root = ReactDOM.createRoot(container);
+        root = ReactDOM.unstable_createRoot(container);
         act(() => root.render(<Root>{steps[i]}</Root>));
         expect(print(store)).toMatch(snapshots[i]);
         act(() => root.render(<Root>{steps[j]}</Root>));
@@ -332,7 +337,7 @@ describe('StoreStressConcurrent', () => {
       for (let j = 0; j < steps.length; j++) {
         container = document.createElement('div');
         // $FlowFixMe
-        root = ReactDOM.createRoot(container);
+        root = ReactDOM.unstable_createRoot(container);
         act(() =>
           root.render(
             <Root>
@@ -401,10 +406,10 @@ describe('StoreStressConcurrent', () => {
 
     // 1. For each step, check Suspense can render them as initial primary content.
     // This is the only step where we use Jest snapshots.
-    let snapshots = [];
+    const snapshots = [];
     let container = document.createElement('div');
     // $FlowFixMe
-    let root = ReactDOM.createRoot(container);
+    let root = ReactDOM.unstable_createRoot(container);
     for (let i = 0; i < steps.length; i++) {
       act(() =>
         root.render(
@@ -531,7 +536,7 @@ describe('StoreStressConcurrent', () => {
         // Always start with a fresh container and steps[i].
         container = document.createElement('div');
         // $FlowFixMe
-        root = ReactDOM.createRoot(container);
+        root = ReactDOM.unstable_createRoot(container);
         act(() =>
           root.render(
             <Root>
@@ -577,7 +582,7 @@ describe('StoreStressConcurrent', () => {
         // Always start with a fresh container and steps[i].
         container = document.createElement('div');
         // $FlowFixMe
-        root = ReactDOM.createRoot(container);
+        root = ReactDOM.unstable_createRoot(container);
         act(() =>
           root.render(
             <Root>
@@ -635,7 +640,7 @@ describe('StoreStressConcurrent', () => {
         // Always start with a fresh container and steps[i].
         container = document.createElement('div');
         // $FlowFixMe
-        root = ReactDOM.createRoot(container);
+        root = ReactDOM.unstable_createRoot(container);
         act(() =>
           root.render(
             <Root>
@@ -685,7 +690,7 @@ describe('StoreStressConcurrent', () => {
         // Always start with a fresh container and steps[i].
         container = document.createElement('div');
         // $FlowFixMe
-        root = ReactDOM.createRoot(container);
+        root = ReactDOM.unstable_createRoot(container);
         act(() =>
           root.render(
             <Root>
@@ -739,7 +744,7 @@ describe('StoreStressConcurrent', () => {
         // Always start with a fresh container and steps[i].
         container = document.createElement('div');
         // $FlowFixMe
-        root = ReactDOM.createRoot(container);
+        root = ReactDOM.unstable_createRoot(container);
         act(() =>
           root.render(
             <Root>
@@ -757,7 +762,7 @@ describe('StoreStressConcurrent', () => {
 
         // Force fallback.
         expect(print(store)).toEqual(snapshots[i]);
-        act(() => {
+        await actAsync(async () => {
           bridge.send('overrideSuspense', {
             id: suspenseID,
             rendererID: store.getRendererIDForElement(suspenseID),
@@ -767,7 +772,7 @@ describe('StoreStressConcurrent', () => {
         expect(print(store)).toEqual(snapshots[j]);
 
         // Stop forcing fallback.
-        act(() => {
+        await actAsync(async () => {
           bridge.send('overrideSuspense', {
             id: suspenseID,
             rendererID: store.getRendererIDForElement(suspenseID),
@@ -817,7 +822,7 @@ describe('StoreStressConcurrent', () => {
         expect(print(store)).toEqual(snapshots[j]);
 
         // Stop forcing fallback. This reverts to primary content.
-        act(() => {
+        await actAsync(async () => {
           bridge.send('overrideSuspense', {
             id: suspenseID,
             rendererID: store.getRendererIDForElement(suspenseID),
@@ -828,13 +833,13 @@ describe('StoreStressConcurrent', () => {
         expect(print(store)).toEqual(snapshots[i]);
 
         // Clean up after every iteration.
-        act(() => root.unmount());
+        await actAsync(async () => root.unmount());
         expect(print(store)).toBe('');
       }
     }
   });
 
-  it('should handle a stress test for Suspense without type change (Concurrent Mode)', () => {
+  it('should handle a stress test for Suspense without type change (Concurrent Mode)', async () => {
     const A = () => 'a';
     const B = () => 'b';
     const C = () => 'c';
@@ -890,10 +895,10 @@ describe('StoreStressConcurrent', () => {
 
     // 1. For each step, check Suspense can render them as initial primary content.
     // This is the only step where we use Jest snapshots.
-    let snapshots = [];
+    const snapshots = [];
     let container = document.createElement('div');
     // $FlowFixMe
-    let root = ReactDOM.createRoot(container);
+    let root = ReactDOM.unstable_createRoot(container);
     for (let i = 0; i < steps.length; i++) {
       act(() =>
         root.render(
@@ -915,7 +920,7 @@ describe('StoreStressConcurrent', () => {
     // 2. Verify check Suspense can render same steps as initial fallback content.
     // We don't actually assert here because the tree includes <MaybeSuspend>
     // which is different from the snapshots above. So we take more snapshots.
-    let fallbackSnapshots = [];
+    const fallbackSnapshots = [];
     for (let i = 0; i < steps.length; i++) {
       act(() =>
         root.render(
@@ -1050,7 +1055,7 @@ describe('StoreStressConcurrent', () => {
         // Always start with a fresh container and steps[i].
         container = document.createElement('div');
         // $FlowFixMe
-        root = ReactDOM.createRoot(container);
+        root = ReactDOM.unstable_createRoot(container);
         act(() =>
           root.render(
             <Root>
@@ -1102,7 +1107,7 @@ describe('StoreStressConcurrent', () => {
         // Always start with a fresh container and steps[i].
         container = document.createElement('div');
         // $FlowFixMe
-        root = ReactDOM.createRoot(container);
+        root = ReactDOM.unstable_createRoot(container);
         act(() =>
           root.render(
             <Root>
@@ -1169,7 +1174,7 @@ describe('StoreStressConcurrent', () => {
         // Always start with a fresh container and steps[i].
         container = document.createElement('div');
         // $FlowFixMe
-        root = ReactDOM.createRoot(container);
+        root = ReactDOM.unstable_createRoot(container);
         act(() =>
           root.render(
             <Root>
@@ -1221,7 +1226,7 @@ describe('StoreStressConcurrent', () => {
         // Always start with a fresh container and steps[i].
         container = document.createElement('div');
         // $FlowFixMe
-        root = ReactDOM.createRoot(container);
+        root = ReactDOM.unstable_createRoot(container);
         act(() =>
           root.render(
             <Root>
@@ -1273,7 +1278,7 @@ describe('StoreStressConcurrent', () => {
         // Always start with a fresh container and steps[i].
         container = document.createElement('div');
         // $FlowFixMe
-        root = ReactDOM.createRoot(container);
+        root = ReactDOM.unstable_createRoot(container);
         act(() =>
           root.render(
             <Root>
@@ -1293,7 +1298,7 @@ describe('StoreStressConcurrent', () => {
 
         // Force fallback.
         expect(print(store)).toEqual(snapshots[i]);
-        act(() => {
+        await actAsync(async () => {
           bridge.send('overrideSuspense', {
             id: suspenseID,
             rendererID: store.getRendererIDForElement(suspenseID),
@@ -1303,7 +1308,7 @@ describe('StoreStressConcurrent', () => {
         expect(print(store)).toEqual(fallbackSnapshots[j]);
 
         // Stop forcing fallback.
-        act(() => {
+        await actAsync(async () => {
           bridge.send('overrideSuspense', {
             id: suspenseID,
             rendererID: store.getRendererIDForElement(suspenseID),
@@ -1353,7 +1358,7 @@ describe('StoreStressConcurrent', () => {
         expect(print(store)).toEqual(fallbackSnapshots[j]);
 
         // Stop forcing fallback. This reverts to primary content.
-        act(() => {
+        await actAsync(async () => {
           bridge.send('overrideSuspense', {
             id: suspenseID,
             rendererID: store.getRendererIDForElement(suspenseID),

@@ -13,6 +13,7 @@ module.exports = {
     Proxy: true,
     WeakMap: true,
     WeakSet: true,
+    Reflect: true,
     // Vendor specific
     MSApp: true,
     __REACT_DEVTOOLS_GLOBAL_HOOK__: true,
@@ -25,9 +26,13 @@ module.exports = {
     trustedTypes: true,
 
     // Scheduler profiling
-    SharedArrayBuffer: true,
     Int32Array: true,
     ArrayBuffer: true,
+
+    TaskController: true,
+
+    // jest
+    jest: true,
   },
   parserOptions: {
     ecmaVersion: 5,

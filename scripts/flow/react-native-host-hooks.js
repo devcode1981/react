@@ -16,8 +16,9 @@ import type {
   ReactNativeBaseComponentViewConfig,
   ViewConfigGetter,
 } from 'react-native-renderer/src/ReactNativeTypes';
-import type {RNTopLevelEventType} from 'legacy-events/TopLevelEventTypes';
+import type {RNTopLevelEventType} from 'react-native-renderer/src/legacy-events/TopLevelEventTypes';
 import type {CapturedError} from 'react-reconciler/src/ReactCapturedValue';
+import type {Fiber} from 'react-reconciler/src/ReactInternalTypes';
 
 type DeepDifferOptions = {|+unsafelyIgnoreFunctions?: boolean|};
 
@@ -96,8 +97,23 @@ declare module 'react-native/Libraries/ReactPrivate/ReactNativePrivateInterface'
     ) => Promise<any>,
     setJSResponder: (reactTag: number, blockNativeResponder: boolean) => void,
     clearJSResponder: () => void,
+    findSubviewIn: (
+      reactTag: ?number,
+      point: Array<number>,
+      callback: (
+        nativeViewTag: number,
+        left: number,
+        top: number,
+        width: number,
+        height: number,
+      ) => void,
+    ) => void,
     ...
   };
+  declare export var legacySendAccessibilityEvent: (
+    reactTag: number,
+    eventTypeName: string,
+  ) => void;
   declare export var BatchedBridge: {
     registerCallableModule: (name: string, module: Object) => void,
     ...
@@ -144,6 +160,7 @@ declare var nativeFabricUIManager: {
   ) => void,
 
   dispatchCommand: (node: Object, command: string, args: Array<any>) => void,
+  sendAccessibilityEvent: (node: Object, eventTypeName: string) => void,
 
   measure: (node: Node, callback: MeasureOnSuccessCallback) => void,
   measureInWindow: (
@@ -155,6 +172,12 @@ declare var nativeFabricUIManager: {
     relativeNode: Node,
     onFail: () => void,
     onSuccess: MeasureLayoutOnSuccessCallback,
+  ) => void,
+  findNodeAtPoint: (
+    node: Node,
+    locationX: number,
+    locationY: number,
+    callback: (Fiber) => void,
   ) => void,
   ...
 };

@@ -83,7 +83,7 @@ describe('ReactDOMServerHydration', () => {
         instance = ReactDOM.render(<TestComponent name="x" />, element);
       }).toWarnDev(
         'render(): Calling ReactDOM.render() to hydrate server-rendered markup ' +
-          'will stop working in React v17. Replace the ReactDOM.render() call ' +
+          'will stop working in React v18. Replace the ReactDOM.render() call ' +
           'with ReactDOM.hydrate() if you want React to attach to the server HTML.',
         {withoutStack: true},
       );
@@ -488,56 +488,76 @@ describe('ReactDOMServerHydration', () => {
     jest.runAllTimers();
     await Promise.resolve();
     Scheduler.unstable_flushAll();
+    await null;
     expect(element.textContent).toBe('Hello world');
   });
 
-  it.experimental(
-    'does not re-enter hydration after committing the first one',
-    () => {
-      let finalHTML = ReactDOMServer.renderToString(<div />);
-      let container = document.createElement('div');
-      container.innerHTML = finalHTML;
-      let root = ReactDOM.createRoot(container, {hydrate: true});
-      root.render(<div />);
-      Scheduler.unstable_flushAll();
-      root.render(null);
-      Scheduler.unstable_flushAll();
-      // This should not reenter hydration state and therefore not trigger hydration
-      // warnings.
-      root.render(<div />);
-      Scheduler.unstable_flushAll();
-    },
-  );
+  // @gate experimental
+  it('does not re-enter hydration after committing the first one', () => {
+    const finalHTML = ReactDOMServer.renderToString(<div />);
+    const container = document.createElement('div');
+    container.innerHTML = finalHTML;
+    const root = ReactDOM.unstable_createRoot(container, {hydrate: true});
+    root.render(<div />);
+    Scheduler.unstable_flushAll();
+    root.render(null);
+    Scheduler.unstable_flushAll();
+    // This should not reenter hydration state and therefore not trigger hydration
+    // warnings.
+    root.render(<div />);
+    Scheduler.unstable_flushAll();
+  });
 
   it('Suspense + hydration in legacy mode', () => {
     const element = document.createElement('div');
-    element.innerHTML = '<div>Hello World</div>';
-    let div = element.firstChild;
-    let ref = React.createRef();
+    element.innerHTML = '<div><div>Hello World</div></div>';
+    const div = element.firstChild.firstChild;
+    const ref = React.createRef();
     expect(() =>
       ReactDOM.hydrate(
-        <React.Suspense fallback={null}>
-          <div ref={ref}>Hello World</div>
-        </React.Suspense>,
+        <div>
+          <React.Suspense fallback={null}>
+            <div ref={ref}>Hello World</div>
+          </React.Suspense>
+        </div>,
         element,
       ),
     ).toErrorDev(
       'Warning: Did not expect server HTML to contain a <div> in <div>.',
-      {withoutStack: true},
     );
 
     // The content should've been client rendered and replaced the
     // existing div.
     expect(ref.current).not.toBe(div);
     // The HTML should be the same though.
-    expect(element.innerHTML).toBe('<div>Hello World</div>');
+    expect(element.innerHTML).toBe('<div><div>Hello World</div></div>');
+  });
+
+  it('Suspense + hydration in legacy mode (at root)', () => {
+    const element = document.createElement('div');
+    element.innerHTML = '<div>Hello World</div>';
+    const div = element.firstChild;
+    const ref = React.createRef();
+    ReactDOM.hydrate(
+      <React.Suspense fallback={null}>
+        <div ref={ref}>Hello World</div>
+      </React.Suspense>,
+      element,
+    );
+
+    // The content should've been client rendered.
+    expect(ref.current).not.toBe(div);
+    // Unfortunately, since we don't delete the tail at the root, a duplicate will remain.
+    expect(element.innerHTML).toBe(
+      '<div>Hello World</div><div>Hello World</div>',
+    );
   });
 
   it('Suspense + hydration in legacy mode with no fallback', () => {
     const element = document.createElement('div');
     element.innerHTML = '<div>Hello World</div>';
-    let div = element.firstChild;
-    let ref = React.createRef();
+    const div = element.firstChild;
+    const ref = React.createRef();
     ReactDOM.hydrate(
       <React.Suspense>
         <div ref={ref}>Hello World</div>
@@ -549,5 +569,58 @@ describe('ReactDOMServerHydration', () => {
     // not a Suspense boundary.
     expect(ref.current).toBe(div);
     expect(element.innerHTML).toBe('<div>Hello World</div>');
+  });
+
+  // regression test for https://github.com/facebook/react/issues/17170
+  it('should not warn if dangerouslySetInnerHtml=undefined', () => {
+    const domElement = document.createElement('div');
+    const reactElement = (
+      <div dangerouslySetInnerHTML={undefined}>
+        <p>Hello, World!</p>
+      </div>
+    );
+    const markup = ReactDOMServer.renderToStaticMarkup(reactElement);
+    domElement.innerHTML = markup;
+
+    ReactDOM.hydrate(reactElement, domElement);
+
+    expect(domElement.innerHTML).toEqual(markup);
+  });
+
+  it('should warn if innerHTML mismatches with dangerouslySetInnerHTML=undefined and children on the client', () => {
+    const domElement = document.createElement('div');
+    const markup = ReactDOMServer.renderToStaticMarkup(
+      <div dangerouslySetInnerHTML={{__html: '<p>server</p>'}} />,
+    );
+    domElement.innerHTML = markup;
+
+    expect(() => {
+      ReactDOM.hydrate(
+        <div dangerouslySetInnerHTML={undefined}>
+          <p>client</p>
+        </div>,
+        domElement,
+      );
+
+      expect(domElement.innerHTML).not.toEqual(markup);
+    }).toErrorDev(
+      'Warning: Text content did not match. Server: "server" Client: "client"',
+    );
+  });
+
+  it('should warn if innerHTML mismatches with dangerouslySetInnerHTML=undefined on the client', () => {
+    const domElement = document.createElement('div');
+    const markup = ReactDOMServer.renderToStaticMarkup(
+      <div dangerouslySetInnerHTML={{__html: '<p>server</p>'}} />,
+    );
+    domElement.innerHTML = markup;
+
+    expect(() => {
+      ReactDOM.hydrate(<div dangerouslySetInnerHTML={undefined} />, domElement);
+
+      expect(domElement.innerHTML).not.toEqual(markup);
+    }).toErrorDev(
+      'Warning: Did not expect server HTML to contain a <p> in <div>',
+    );
   });
 });

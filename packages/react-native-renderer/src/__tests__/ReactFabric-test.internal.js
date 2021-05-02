@@ -24,6 +24,10 @@ const DISPATCH_COMMAND_REQUIRES_HOST_COMPONENT =
   "Warning: dispatchCommand was called with a ref that isn't a " +
   'native component. Use React.forwardRef to get access to the underlying native component';
 
+const SEND_ACCESSIBILITY_EVENT_REQUIRES_HOST_COMPONENT =
+  "sendAccessibilityEvent was called with a ref that isn't a " +
+  'native component. Use React.forwardRef to get access to the underlying native component';
+
 jest.mock('shared/ReactFeatureFlags', () =>
   require('shared/forks/ReactFeatureFlags.native-oss'),
 );
@@ -287,6 +291,64 @@ describe('ReactFabric', () => {
     });
 
     expect(nativeFabricUIManager.dispatchCommand).not.toBeCalled();
+  });
+
+  it('should call sendAccessibilityEvent for native refs', () => {
+    const View = createReactNativeComponentClass('RCTView', () => ({
+      validAttributes: {foo: true},
+      uiViewClassName: 'RCTView',
+    }));
+
+    nativeFabricUIManager.sendAccessibilityEvent.mockClear();
+
+    let viewRef;
+    ReactFabric.render(
+      <View
+        ref={ref => {
+          viewRef = ref;
+        }}
+      />,
+      11,
+    );
+
+    expect(nativeFabricUIManager.sendAccessibilityEvent).not.toBeCalled();
+    ReactFabric.sendAccessibilityEvent(viewRef, 'focus');
+    expect(nativeFabricUIManager.sendAccessibilityEvent).toHaveBeenCalledTimes(
+      1,
+    );
+    expect(nativeFabricUIManager.sendAccessibilityEvent).toHaveBeenCalledWith(
+      expect.any(Object),
+      'focus',
+    );
+  });
+
+  it('should warn and no-op if calling sendAccessibilityEvent on non native refs', () => {
+    class BasicClass extends React.Component {
+      render() {
+        return <React.Fragment />;
+      }
+    }
+
+    nativeFabricUIManager.sendAccessibilityEvent.mockReset();
+
+    let viewRef;
+    ReactFabric.render(
+      <BasicClass
+        ref={ref => {
+          viewRef = ref;
+        }}
+      />,
+      11,
+    );
+
+    expect(nativeFabricUIManager.sendAccessibilityEvent).not.toBeCalled();
+    expect(() => {
+      ReactFabric.sendAccessibilityEvent(viewRef, 'eventTypeName');
+    }).toErrorDev([SEND_ACCESSIBILITY_EVENT_REQUIRES_HOST_COMPONENT], {
+      withoutStack: true,
+    });
+
+    expect(nativeFabricUIManager.sendAccessibilityEvent).not.toBeCalled();
   });
 
   it('should call FabricUIManager.measure on ref.measure', () => {
@@ -613,18 +675,18 @@ describe('ReactFabric', () => {
       1,
     );
 
-    let [
+    const [
       ,
       ,
       ,
       ,
       instanceHandle,
     ] = nativeFabricUIManager.createNode.mock.calls[0];
-    let [
+    const [
       dispatchEvent,
     ] = nativeFabricUIManager.registerEventHandler.mock.calls[0];
 
-    let touchEvent = {
+    const touchEvent = {
       touches: [],
       changedTouches: [],
     };
@@ -708,7 +770,7 @@ describe('ReactFabric', () => {
       1,
     );
 
-    let [
+    const [
       dispatchEvent,
     ] = nativeFabricUIManager.registerEventHandler.mock.calls[0];
 
@@ -771,9 +833,8 @@ describe('ReactFabric', () => {
         'findHostInstance_DEPRECATED was passed an instance of ContainsStrictModeChild which renders StrictMode children. ' +
         'Instead, add a ref directly to the element you want to reference. ' +
         'Learn more about using refs safely here: ' +
-        'https://fb.me/react-strict-mode-find-node' +
+        'https://reactjs.org/link/strict-mode-find-node' +
         '\n    in RCTView (at **)' +
-        '\n    in StrictMode (at **)' +
         '\n    in ContainsStrictModeChild (at **)',
     ]);
     expect(match).toBe(child);
@@ -809,10 +870,9 @@ describe('ReactFabric', () => {
         'findHostInstance_DEPRECATED was passed an instance of IsInStrictMode which is inside StrictMode. ' +
         'Instead, add a ref directly to the element you want to reference. ' +
         'Learn more about using refs safely here: ' +
-        'https://fb.me/react-strict-mode-find-node' +
+        'https://reactjs.org/link/strict-mode-find-node' +
         '\n    in RCTView (at **)' +
-        '\n    in IsInStrictMode (at **)' +
-        '\n    in StrictMode (at **)',
+        '\n    in IsInStrictMode (at **)',
     ]);
     expect(match).toBe(child);
   });
@@ -844,9 +904,8 @@ describe('ReactFabric', () => {
         'findNodeHandle was passed an instance of ContainsStrictModeChild which renders StrictMode children. ' +
         'Instead, add a ref directly to the element you want to reference. ' +
         'Learn more about using refs safely here: ' +
-        'https://fb.me/react-strict-mode-find-node' +
+        'https://reactjs.org/link/strict-mode-find-node' +
         '\n    in RCTView (at **)' +
-        '\n    in StrictMode (at **)' +
         '\n    in ContainsStrictModeChild (at **)',
     ]);
     expect(match).toBe(child._nativeTag);
@@ -880,10 +939,9 @@ describe('ReactFabric', () => {
         'findNodeHandle was passed an instance of IsInStrictMode which is inside StrictMode. ' +
         'Instead, add a ref directly to the element you want to reference. ' +
         'Learn more about using refs safely here: ' +
-        'https://fb.me/react-strict-mode-find-node' +
+        'https://reactjs.org/link/strict-mode-find-node' +
         '\n    in RCTView (at **)' +
-        '\n    in IsInStrictMode (at **)' +
-        '\n    in StrictMode (at **)',
+        '\n    in IsInStrictMode (at **)',
     ]);
     expect(match).toBe(child._nativeTag);
   });
@@ -894,7 +952,7 @@ describe('ReactFabric', () => {
       uiViewClassName: 'RCTView',
     }));
 
-    let viewRef = React.createRef();
+    const viewRef = React.createRef();
     ReactFabric.render(<View ref={viewRef} />, 11);
 
     expect(TextInputState.blurTextInput).not.toBeCalled();
@@ -911,7 +969,7 @@ describe('ReactFabric', () => {
       uiViewClassName: 'RCTView',
     }));
 
-    let viewRef = React.createRef();
+    const viewRef = React.createRef();
     ReactFabric.render(<View ref={viewRef} />, 11);
 
     expect(TextInputState.focusTextInput).not.toBeCalled();

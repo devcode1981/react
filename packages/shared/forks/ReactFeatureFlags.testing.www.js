@@ -7,29 +7,29 @@
  * @flow
  */
 
-import invariant from 'shared/invariant';
-
 import typeof * as FeatureFlagsType from 'shared/ReactFeatureFlags';
 import typeof * as ExportsType from './ReactFeatureFlags.testing.www';
 
 export const debugRenderPhaseSideEffectsForStrictMode = false;
-export const enableUserTimingAPI = false;
+export const enableDebugTracing = false;
+export const enableSchedulingProfiler = false;
 export const warnAboutDeprecatedLifecycles = true;
 export const replayFailedUnitOfWorkWithInvokeGuardedCallback = false;
 export const enableProfilerTimer = false;
-export const enableSchedulerTracing = false;
+export const enableProfilerCommitHooks = false;
+export const enableProfilerNestedUpdatePhase = false;
+export const enableProfilerNestedUpdateScheduledHook = false;
+export const enableUpdaterTracking = false;
 export const enableSuspenseServerRenderer = true;
 export const enableSelectiveHydration = true;
-export const enableBlocksAPI = true;
+export const enableLazyElements = false;
+export const enableCache = false;
 export const disableJavaScriptURLs = true;
 export const disableInputAttributeSyncing = false;
-export const warnAboutShorthandPropertyCollision = true;
 export const enableSchedulerDebugging = false;
-export const enableDeprecatedFlareAPI = true;
-export const enableFundamentalAPI = false;
 export const enableScopeAPI = true;
+export const enableCreateEventHandleAPI = true;
 export const warnAboutUnmockedScheduler = true;
-export const flushSuspenseFallbacksInTests = true;
 export const enableSuspenseCallback = true;
 export const warnAboutDefaultPropsOnFunctionComponents = false;
 export const warnAboutStringRefs = false;
@@ -37,21 +37,29 @@ export const disableLegacyContext = __EXPERIMENTAL__;
 export const disableSchedulerTimeoutBasedOnReactExpirationTime = false;
 export const enableTrustedTypesIntegration = false;
 export const disableTextareaChildren = __EXPERIMENTAL__;
-export const disableMapsAsChildren = __EXPERIMENTAL__;
+export const disableModulePatternComponents = true;
 export const warnUnstableRenderSubtreeIntoContainer = false;
-export const deferPassiveEffectCleanupDuringUnmount = false;
-export const runAllPassiveEffectDestroysBeforeCreates = false;
-export const enableModernEventSystem = false;
 export const warnAboutSpreadingKeyToJSX = false;
-export const enableLegacyFBPrimerSupport = !__EXPERIMENTAL__;
+export const enableComponentStackLocations = true;
+export const enableLegacyFBSupport = !__EXPERIMENTAL__;
+export const enableFilterEmptyStringAttributesDOM = false;
+export const disableNativeComponentFrames = false;
+export const skipUnmountedBoundaries = true;
+export const deletedTreeCleanUpLevel = 1;
+export const enableSuspenseLayoutEffectSemantics = false;
 
-// Internal-only attempt to debug a React Native issue. See D20130868.
-export const throwEarlyForMysteriousError = false;
+export const enableNewReconciler = false;
+export const deferRenderPhaseUpdateToNextBatch = true;
 
-// Only used in www builds.
-export function addUserTimingListener() {
-  invariant(false, 'Not implemented.');
-}
+export const enableStrictEffects = false;
+export const createRootStrictEffectsByDefault = false;
+export const enableUseRefAccessWarning = false;
+
+export const enableRecursiveCommitTraversal = false;
+export const disableSchedulerTimeoutInWorkLoop = false;
+export const enableLazyContextPropagation = false;
+export const enableSyncDefaultUpdates = true;
+export const allowConcurrentByDefault = true;
 
 // Flow magic to verify the exports of this file match the original version.
 // eslint-disable-next-line no-unused-vars

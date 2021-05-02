@@ -263,7 +263,7 @@ describe('ReactContextValidator', () => {
 
     class Component extends React.Component {
       render() {
-        return <TestContext.Provider />;
+        return <TestContext.Provider value={undefined} />;
       }
     }
 
@@ -431,8 +431,12 @@ describe('ReactContextValidator', () => {
     expect(renderContext).toBe(secondContext);
     expect(componentDidUpdateContext).toBe(secondContext);
 
-    // sCU is not called in this case because React force updates when a provider re-renders
-    expect(shouldComponentUpdateWasCalled).toBe(false);
+    if (gate(flags => flags.enableLazyContextPropagation)) {
+      expect(shouldComponentUpdateWasCalled).toBe(true);
+    } else {
+      // sCU is not called in this case because React force updates when a provider re-renders
+      expect(shouldComponentUpdateWasCalled).toBe(false);
+    }
   });
 
   it('should re-render PureComponents when context Provider updates', () => {
@@ -690,9 +694,22 @@ describe('ReactContextValidator', () => {
       );
     }).toErrorDev(
       'Warning: Failed prop type: The prop `dontPassToSeeErrorStack` is marked as required in `Validator`, but its value is `undefined`.\n' +
-        '    in Validator (at **)\n' +
-        '    in MyContextType.Consumer (at **)\n' +
-        '    in MyContextType.Provider (at **)',
+        '    in Validator (at **)',
     );
+  });
+
+  it('warns if displayName is set on the consumer type', () => {
+    const Context = React.createContext(null);
+
+    expect(() => {
+      Context.Consumer.displayName = 'IgnoredName';
+    }).toWarnDev(
+      'Warning: Setting `displayName` on Context.Consumer has no effect. ' +
+        "You should set it directly on the context with Context.displayName = 'IgnoredName'.",
+      {withoutStack: true},
+    );
+
+    // warning is deduped by Context so subsequent setting is fine
+    Context.Consumer.displayName = 'ADifferentName';
   });
 });

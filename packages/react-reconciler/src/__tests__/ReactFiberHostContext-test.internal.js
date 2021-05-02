@@ -13,19 +13,25 @@
 let React;
 let ReactFiberReconciler;
 let ConcurrentRoot;
+let DefaultEventPriority;
 
 describe('ReactFiberHostContext', () => {
   beforeEach(() => {
     jest.resetModules();
     React = require('react');
     ReactFiberReconciler = require('react-reconciler');
-    ConcurrentRoot = require('shared/ReactRootTags');
+    ConcurrentRoot = require('react-reconciler/src/ReactRootTags')
+      .ConcurrentRoot;
+    DefaultEventPriority = require('react-reconciler/src/ReactEventPriorities')
+      .DefaultEventPriority;
   });
 
-  it('works with null host context', () => {
+  it('works with null host context', async () => {
     let creates = 0;
     const Renderer = ReactFiberReconciler({
-      prepareForCommit: function() {},
+      prepareForCommit: function() {
+        return null;
+      },
       resetAfterCommit: function() {},
       getRootHostContext: function() {
         return null;
@@ -51,6 +57,10 @@ describe('ReactFiberHostContext', () => {
       appendChildToContainer: function() {
         return null;
       },
+      clearContainer: function() {},
+      getCurrentEventPriority: function() {
+        return DefaultEventPriority;
+      },
       supportsMutation: true,
     });
 
@@ -60,22 +70,25 @@ describe('ReactFiberHostContext', () => {
       false,
       null,
     );
-    Renderer.updateContainer(
-      <a>
-        <b />
-      </a>,
-      container,
-      /* parentComponent: */ null,
-      /* callback: */ null,
-    );
+    Renderer.act(() => {
+      Renderer.updateContainer(
+        <a>
+          <b />
+        </a>,
+        container,
+        /* parentComponent: */ null,
+        /* callback: */ null,
+      );
+    });
     expect(creates).toBe(2);
   });
 
   it('should send the context to prepareForCommit and resetAfterCommit', () => {
-    let rootContext = {};
+    const rootContext = {};
     const Renderer = ReactFiberReconciler({
       prepareForCommit: function(hostContext) {
         expect(hostContext).toBe(rootContext);
+        return null;
       },
       resetAfterCommit: function(hostContext) {
         expect(hostContext).toBe(rootContext);
@@ -104,6 +117,10 @@ describe('ReactFiberHostContext', () => {
       appendChildToContainer: function() {
         return null;
       },
+      clearContainer: function() {},
+      getCurrentEventPriority: function() {
+        return DefaultEventPriority;
+      },
       supportsMutation: true,
     });
 
@@ -113,13 +130,15 @@ describe('ReactFiberHostContext', () => {
       false,
       null,
     );
-    Renderer.updateContainer(
-      <a>
-        <b />
-      </a>,
-      container,
-      /* parentComponent: */ null,
-      /* callback: */ null,
-    );
+    Renderer.act(() => {
+      Renderer.updateContainer(
+        <a>
+          <b />
+        </a>,
+        container,
+        /* parentComponent: */ null,
+        /* callback: */ null,
+      );
+    });
   });
 });

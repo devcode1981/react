@@ -14,7 +14,7 @@ import type {
   MeasureLayoutOnSuccessCallback,
   MeasureOnSuccessCallback,
   NativeMethods,
-  ReactNativeBaseComponentViewConfig,
+  ViewConfig,
 } from './ReactNativeTypes';
 import type {Instance} from './ReactNativeHostConfig';
 
@@ -33,12 +33,20 @@ import {
 class ReactNativeFiberHostComponent {
   _children: Array<Instance | number>;
   _nativeTag: number;
-  viewConfig: ReactNativeBaseComponentViewConfig<>;
+  _internalFiberInstanceHandleDEV: Object;
+  viewConfig: ViewConfig;
 
-  constructor(tag: number, viewConfig: ReactNativeBaseComponentViewConfig<>) {
+  constructor(
+    tag: number,
+    viewConfig: ViewConfig,
+    internalInstanceHandleDEV: Object,
+  ) {
     this._nativeTag = tag;
     this._children = [];
     this.viewConfig = viewConfig;
+    if (__DEV__) {
+      this._internalFiberInstanceHandleDEV = internalInstanceHandleDEV;
+    }
   }
 
   blur() {
@@ -74,7 +82,7 @@ class ReactNativeFiberHostComponent {
       // Already a node handle
       relativeNode = relativeToNativeNode;
     } else {
-      let nativeNode: ReactNativeFiberHostComponent = (relativeToNativeNode: any);
+      const nativeNode: ReactNativeFiberHostComponent = (relativeToNativeNode: any);
       if (nativeNode._nativeTag) {
         relativeNode = nativeNode._nativeTag;
       }
@@ -119,6 +127,6 @@ class ReactNativeFiberHostComponent {
 }
 
 // eslint-disable-next-line no-unused-expressions
-(ReactNativeFiberHostComponent.prototype: NativeMethods);
+(ReactNativeFiberHostComponent.prototype: $ReadOnly<{...NativeMethods, ...}>);
 
 export default ReactNativeFiberHostComponent;

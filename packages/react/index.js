@@ -28,11 +28,6 @@ export type ElementConfig<C> = React$ElementConfig<C>;
 export type ElementRef<C> = React$ElementRef<C>;
 export type Config<Props, DefaultProps> = React$Config<Props, DefaultProps>;
 export type ChildrenArray<+T> = $ReadOnlyArray<ChildrenArray<T>> | T;
-export type Interaction = {
-  name: string,
-  timestamp: number,
-  ...
-};
 
 // Export all exports so that they're available in tests.
 // We can't use export * from in Flow for some reason.
@@ -55,8 +50,13 @@ export {
   useReducer,
   useRef,
   useState,
+  useMutableSource,
+  useMutableSource as unstable_useMutableSource,
+  createMutableSource,
+  createMutableSource as unstable_createMutableSource,
   Fragment,
   Profiler,
+  unstable_DebugTracingMode,
   StrictMode,
   Suspense,
   createElement,
@@ -66,15 +66,17 @@ export {
   __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED,
   createFactory,
   useTransition,
+  useTransition as unstable_useTransition,
+  startTransition,
+  startTransition as unstable_startTransition,
   useDeferredValue,
+  useDeferredValue as unstable_useDeferredValue,
   SuspenseList,
-  unstable_withSuspenseConfig,
-  block,
-  DEPRECATED_useResponder,
-  DEPRECATED_createResponder,
-  unstable_createFundamental,
-  unstable_createScope,
-  jsx,
-  jsxs,
-  jsxDEV,
+  SuspenseList as unstable_SuspenseList,
+  unstable_LegacyHidden,
+  unstable_Scope,
+  unstable_useOpaqueIdentifier,
+  unstable_getCacheForType,
+  unstable_Cache,
+  unstable_useCacheRefresh,
 } from './src/React';

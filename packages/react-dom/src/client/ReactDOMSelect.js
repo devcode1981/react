@@ -10,8 +10,9 @@
 // TODO: direct imports like some-package/src/* are bad. Fix me.
 import {getCurrentFiberOwnerNameInDevOrNull} from 'react-reconciler/src/ReactCurrentFiber';
 
-import ReactControlledValuePropTypes from '../shared/ReactControlledValuePropTypes';
+import {checkControlledValueProps} from '../shared/ReactControlledValuePropTypes';
 import {getToStringValue, toString} from './ToStringValue';
+import isArray from 'shared/isArray';
 
 let didWarnValueDefaultValue;
 
@@ -38,22 +39,22 @@ const valuePropNames = ['value', 'defaultValue'];
  */
 function checkSelectPropTypes(props) {
   if (__DEV__) {
-    ReactControlledValuePropTypes.checkPropTypes('select', props);
+    checkControlledValueProps('select', props);
 
     for (let i = 0; i < valuePropNames.length; i++) {
       const propName = valuePropNames[i];
       if (props[propName] == null) {
         continue;
       }
-      const isArray = Array.isArray(props[propName]);
-      if (props.multiple && !isArray) {
+      const propNameIsArray = isArray(props[propName]);
+      if (props.multiple && !propNameIsArray) {
         console.error(
           'The `%s` prop supplied to <select> must be an array if ' +
             '`multiple` is true.%s',
           propName,
           getDeclarationErrorAddendum(),
         );
-      } else if (!props.multiple && isArray) {
+      } else if (!props.multiple && propNameIsArray) {
         console.error(
           'The `%s` prop supplied to <select> must be a scalar ' +
             'value if `multiple` is false.%s',
@@ -78,8 +79,8 @@ function updateOptions(
   const options: IndexableHTMLOptionsCollection = node.options;
 
   if (multiple) {
-    let selectedValues = (propValue: Array<string>);
-    let selectedValue = {};
+    const selectedValues = (propValue: Array<string>);
+    const selectedValue = {};
     for (let i = 0; i < selectedValues.length; i++) {
       // Prefix to avoid chaos with special keys.
       selectedValue['$' + selectedValues[i]] = true;
@@ -96,7 +97,7 @@ function updateOptions(
   } else {
     // Do not set `select.value` as exact behavior isn't consistent across all
     // browsers for all cases.
-    let selectedValue = toString(getToStringValue((propValue: any)));
+    const selectedValue = toString(getToStringValue((propValue: any)));
     let defaultSelected = null;
     for (let i = 0; i < options.length; i++) {
       if (options[i].value === selectedValue) {
@@ -159,7 +160,7 @@ export function initWrapperState(element: Element, props: Object) {
           '(specify either the value prop, or the defaultValue prop, but not ' +
           'both). Decide between using a controlled or uncontrolled select ' +
           'element and remove one of these props. More info: ' +
-          'https://fb.me/react-controlled-components',
+          'https://reactjs.org/link/controlled-components',
       );
       didWarnValueDefaultValue = true;
     }

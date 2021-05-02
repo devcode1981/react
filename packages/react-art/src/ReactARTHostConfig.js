@@ -10,10 +10,8 @@ import Mode from 'art/modes/current';
 import invariant from 'shared/invariant';
 
 import {TYPES, EVENT_TYPES, childrenAsString} from './ReactARTInternals';
-import type {
-  ReactEventResponder,
-  ReactEventResponderInstance,
-} from 'shared/ReactTypes';
+
+import {DefaultEventPriority} from 'react-reconciler/src/ReactEventPriorities';
 
 const pooledTransform = new Transform();
 
@@ -68,7 +66,7 @@ function createEventHandler(instance) {
 
 function destroyEventListeners(instance) {
   if (instance._subscriptions) {
-    for (let type in instance._subscriptions) {
+    for (const type in instance._subscriptions) {
       instance._subscriptions[type]();
     }
   }
@@ -170,7 +168,7 @@ function applyNodeProps(instance, props, prevProps = {}) {
     }
   }
 
-  for (let type in EVENT_TYPES) {
+  for (const type in EVENT_TYPES) {
     addEventListeners(instance, EVENT_TYPES[type], props[type]);
   }
 }
@@ -241,8 +239,11 @@ function applyTextProps(instance, props, prevProps = {}) {
   }
 }
 
-export * from 'shared/HostConfigWithNoPersistence';
-export * from 'shared/HostConfigWithNoHydration';
+export * from 'react-reconciler/src/ReactFiberHostConfigWithNoPersistence';
+export * from 'react-reconciler/src/ReactFiberHostConfigWithNoHydration';
+export * from 'react-reconciler/src/ReactFiberHostConfigWithNoScopes';
+export * from 'react-reconciler/src/ReactFiberHostConfigWithNoTestSelectors';
+export * from 'react-reconciler/src/ReactFiberHostConfigWithNoMicrotasks';
 
 export function appendInitialChild(parentInstance, child) {
   if (typeof child === 'string') {
@@ -306,6 +307,7 @@ export function getPublicInstance(instance) {
 
 export function prepareForCommit() {
   // Noop
+  return null;
 }
 
 export function prepareUpdate(domElement, type, oldProps, newProps) {
@@ -318,10 +320,6 @@ export function resetAfterCommit() {
 
 export function resetTextContent(domElement) {
   // Noop
-}
-
-export function shouldDeprioritizeSubtree(type, props) {
-  return false;
 }
 
 export function getRootHostContext() {
@@ -340,6 +338,10 @@ export function shouldSetTextContent(type, props) {
   return (
     typeof props.children === 'string' || typeof props.children === 'number'
   );
+}
+
+export function getCurrentEventPriority() {
+  return DefaultEventPriority;
 }
 
 // The ART renderer is secondary to the React DOM renderer.
@@ -426,46 +428,44 @@ export function unhideTextInstance(textInstance, text): void {
   // Noop
 }
 
-export function DEPRECATED_mountResponderInstance(
-  responder: ReactEventResponder<any, any>,
-  responderInstance: ReactEventResponderInstance<any, any>,
-  props: Object,
-  state: Object,
-  instance: Object,
-) {
-  throw new Error('Not yet implemented.');
-}
-
-export function DEPRECATED_unmountResponderInstance(
-  responderInstance: ReactEventResponderInstance<any, any>,
-): void {
-  throw new Error('Not yet implemented.');
-}
-
-export function getFundamentalComponentInstance(fundamentalInstance) {
-  throw new Error('Not yet implemented.');
-}
-
-export function mountFundamentalComponent(fundamentalInstance) {
-  throw new Error('Not yet implemented.');
-}
-
-export function shouldUpdateFundamentalComponent(fundamentalInstance) {
-  throw new Error('Not yet implemented.');
-}
-
-export function updateFundamentalComponent(fundamentalInstance) {
-  throw new Error('Not yet implemented.');
-}
-
-export function unmountFundamentalComponent(fundamentalInstance) {
-  throw new Error('Not yet implemented.');
+export function clearContainer(container) {
+  // TODO Implement this
 }
 
 export function getInstanceFromNode(node) {
   throw new Error('Not yet implemented.');
 }
 
-export function beforeRemoveInstance(instance) {
+export function isOpaqueHydratingObject(value: mixed): boolean {
+  throw new Error('Not yet implemented');
+}
+
+export function makeOpaqueHydratingObject(
+  attemptToReadValue: () => void,
+): OpaqueIDType {
+  throw new Error('Not yet implemented.');
+}
+
+export function makeClientId(): OpaqueIDType {
+  throw new Error('Not yet implemented');
+}
+
+export function makeClientIdInDEV(warnOnAccessInDEV: () => void): OpaqueIDType {
+  throw new Error('Not yet implemented');
+}
+
+export function beforeActiveInstanceBlur(internalInstanceHandle: Object) {
+  // noop
+}
+
+export function afterActiveInstanceBlur() {
+  // noop
+}
+
+export function preparePortalMount(portalInstance: any): void {
+  // noop
+}
+
+export function detachDeletedInstance(node: Instance): void {
   // noop
 }

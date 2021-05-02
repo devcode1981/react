@@ -23,7 +23,7 @@ export const {
   getPendingChildren,
   getOrCreateRootContainer,
   createRoot,
-  createBlockingRoot,
+  createLegacyRoot,
   getChildrenAsJSX,
   getPendingChildrenAsJSX,
   createPortal,
@@ -40,12 +40,15 @@ export const {
   deferredUpdates,
   unbatchedUpdates,
   discreteUpdates,
+  idleUpdates,
   flushDiscreteUpdates,
   flushSync,
   flushPassiveEffects,
   act,
   dumpTree,
   getRoot,
+  // TODO: Remove this after callers migrate to alternatives.
+  unstable_runWithPriority,
 } = createReactNoop(
   ReactFiberReconciler, // reconciler
   true, // useMutation

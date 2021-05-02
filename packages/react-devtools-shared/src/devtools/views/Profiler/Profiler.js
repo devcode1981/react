@@ -15,19 +15,18 @@ import TabBar from '../TabBar';
 import ClearProfilingDataButton from './ClearProfilingDataButton';
 import CommitFlamegraph from './CommitFlamegraph';
 import CommitRanked from './CommitRanked';
-import Interactions from './Interactions';
 import RootSelector from './RootSelector';
 import RecordToggle from './RecordToggle';
 import ReloadAndProfileButton from './ReloadAndProfileButton';
 import ProfilingImportExportButtons from './ProfilingImportExportButtons';
 import SnapshotSelector from './SnapshotSelector';
 import SidebarCommitInfo from './SidebarCommitInfo';
-import SidebarInteractions from './SidebarInteractions';
 import SidebarSelectedFiberInfo from './SidebarSelectedFiberInfo';
 import SettingsModal from 'react-devtools-shared/src/devtools/views/Settings/SettingsModal';
 import SettingsModalContextToggle from 'react-devtools-shared/src/devtools/views/Settings/SettingsModalContextToggle';
 import {SettingsModalContextController} from 'react-devtools-shared/src/devtools/views/Settings/SettingsModalContext';
 import portaledContent from '../portaledContent';
+import Store from '../../store';
 
 import styles from './Profiler.css';
 
@@ -52,9 +51,6 @@ function Profiler(_: {||}) {
       case 'ranked-chart':
         view = <CommitRanked />;
         break;
-      case 'interactions':
-        view = <Interactions />;
-        break;
       default:
         break;
     }
@@ -71,9 +67,6 @@ function Profiler(_: {||}) {
   let sidebar = null;
   if (!isProfiling && !isProcessingData && didRecordCommits) {
     switch (selectedTabID) {
-      case 'interactions':
-        sidebar = <SidebarInteractions />;
-        break;
       case 'flame-chart':
       case 'ranked-chart':
         // TRICKY
@@ -147,12 +140,6 @@ const tabs = [
     label: 'Ranked',
     title: 'Ranked chart',
   },
-  {
-    id: 'interactions',
-    icon: 'interactions',
-    label: 'Interactions',
-    title: 'Profiled interactions',
-  },
 ];
 
 const NoProfilingData = () => (
@@ -175,10 +162,10 @@ const ProfilingNotSupported = () => (
       Learn more at{' '}
       <a
         className={styles.Link}
-        href="https://fb.me/react-profiling"
+        href="https://reactjs.org/link/profiling"
         rel="noopener noreferrer"
         target="_blank">
-        fb.me/react-profiling
+        reactjs.org/link/profiling
       </a>
       .
     </p>
@@ -201,4 +188,10 @@ const RecordingInProgress = () => (
   </div>
 );
 
-export default portaledContent(Profiler);
+function onErrorRetry(store: Store) {
+  // If an error happened in the Profiler,
+  // we should clear data on retry (or it will just happen again).
+  store.profilerStore.profilingData = null;
+}
+
+export default portaledContent(Profiler, onErrorRetry);

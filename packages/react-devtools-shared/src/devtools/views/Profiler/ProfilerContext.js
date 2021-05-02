@@ -19,10 +19,10 @@ import {StoreContext} from '../context';
 
 import type {ProfilingDataFrontend} from './types';
 
-export type TabID = 'flame-chart' | 'ranked-chart' | 'interactions';
+export type TabID = 'flame-chart' | 'ranked-chart';
 
 export type Context = {|
-  // Which tab is selexted in the Profiler UI?
+  // Which tab is selected in the Profiler UI?
   selectedTabID: TabID,
   selectTab(id: TabID): void,
 
@@ -64,10 +64,6 @@ export type Context = {|
   selectedFiberID: number | null,
   selectedFiberName: string | null,
   selectFiber: (id: number | null, name: string | null) => void,
-
-  // Which interaction is currently selected in the Interactions graph?
-  selectedInteractionID: number | null,
-  selectInteraction: (id: number | null) => void,
 |};
 
 const ProfilerContext = createContext<Context>(((null: any): Context));
@@ -129,6 +125,42 @@ function ProfilerContextController({children}: Props) {
     setPrevProfilingData,
   ] = useState<ProfilingDataFrontend | null>(null);
   const [rootID, setRootID] = useState<number | null>(null);
+  const [selectedFiberID, selectFiberID] = useState<number | null>(null);
+  const [selectedFiberName, selectFiberName] = useState<string | null>(null);
+
+  const selectFiber = useCallback(
+    (id: number | null, name: string | null) => {
+      selectFiberID(id);
+      selectFiberName(name);
+
+      // Sync selection to the Components tab for convenience.
+      // Keep in mind that profiling data may be from a previous session.
+      // If data has been imported, we should skip the selection sync.
+      if (
+        id !== null &&
+        profilingData !== null &&
+        profilingData.imported === false
+      ) {
+        // We should still check to see if this element is still in the store.
+        // It may have been removed during profiling.
+        if (store.containsElement(id)) {
+          dispatch({
+            type: 'SELECT_ELEMENT_BY_ID',
+            payload: id,
+          });
+        }
+      }
+    },
+    [dispatch, selectFiberID, selectFiberName, store, profilingData],
+  );
+
+  const setRootIDAndClearFiber = useCallback(
+    (id: number | null) => {
+      selectFiber(null, null);
+      setRootID(id);
+    },
+    [setRootID, selectFiber],
+  );
 
   if (prevProfilingData !== profilingData) {
     batchedUpdates(() => {
@@ -150,9 +182,9 @@ function ProfilerContextController({children}: Props) {
             selectedElementRootID !== null &&
             dataForRoots.has(selectedElementRootID)
           ) {
-            setRootID(selectedElementRootID);
+            setRootIDAndClearFiber(selectedElementRootID);
           } else {
-            setRootID(firstRootID);
+            setRootIDAndClearFiber(firstRootID);
           }
         }
       }
@@ -180,33 +212,6 @@ function ProfilerContextController({children}: Props) {
     null,
   );
   const [selectedTabID, selectTab] = useState<TabID>('flame-chart');
-  const [selectedFiberID, selectFiberID] = useState<number | null>(null);
-  const [selectedFiberName, selectFiberName] = useState<string | null>(null);
-  const [selectedInteractionID, selectInteraction] = useState<number | null>(
-    null,
-  );
-
-  const selectFiber = useCallback(
-    (id: number | null, name: string | null) => {
-      selectFiberID(id);
-      selectFiberName(name);
-
-      // Sync selection to the Components tab for convenience.
-      if (id !== null) {
-        const element = store.getElementByID(id);
-
-        // Keep in mind that profiling data may be from a previous session.
-        // In that case, IDs may match up arbitrarily; to be safe, compare both ID and display name.
-        if (element !== null && element.displayName === name) {
-          dispatch({
-            type: 'SELECT_ELEMENT_BY_ID',
-            payload: id,
-          });
-        }
-      }
-    },
-    [dispatch, selectFiberID, selectFiberName, store],
-  );
 
   if (isProfiling) {
     batchedUpdates(() => {
@@ -216,9 +221,6 @@ function ProfilerContextController({children}: Props) {
       if (selectedFiberID !== null) {
         selectFiberID(null);
         selectFiberName(null);
-      }
-      if (selectedInteractionID !== null) {
-        selectInteraction(null);
       }
     });
   }
@@ -237,7 +239,7 @@ function ProfilerContextController({children}: Props) {
       supportsProfiling,
 
       rootID,
-      setRootID,
+      setRootID: setRootIDAndClearFiber,
 
       isCommitFilterEnabled,
       setIsCommitFilterEnabled,
@@ -250,9 +252,6 @@ function ProfilerContextController({children}: Props) {
       selectedFiberID,
       selectedFiberName,
       selectFiber,
-
-      selectedInteractionID,
-      selectInteraction,
     }),
     [
       selectedTabID,
@@ -268,6 +267,7 @@ function ProfilerContextController({children}: Props) {
 
       rootID,
       setRootID,
+      setRootIDAndClearFiber,
 
       isCommitFilterEnabled,
       setIsCommitFilterEnabled,
@@ -280,9 +280,6 @@ function ProfilerContextController({children}: Props) {
       selectedFiberID,
       selectedFiberName,
       selectFiber,
-
-      selectedInteractionID,
-      selectInteraction,
     ],
   );
 
