@@ -70,6 +70,7 @@ import {
   ChildDeletion,
   ForceUpdateForLegacySuspense,
   StaticMask,
+  ShouldCapture,
 } from './ReactFiberFlags';
 import ReactSharedInternals from 'shared/ReactSharedInternals';
 import {
@@ -111,6 +112,7 @@ import {
   processUpdateQueue,
   cloneUpdateQueue,
   initializeUpdateQueue,
+  enqueueCapturedUpdate,
 } from './ReactUpdateQueue.old';
 import {
   NoLane,
@@ -125,6 +127,7 @@ import {
   removeLanes,
   mergeLanes,
   getBumpedLaneForHydration,
+  pickArbitraryLane,
 } from './ReactFiberLane.old';
 import {
   ConcurrentMode,
@@ -141,7 +144,7 @@ import {
   isPrimaryRenderer,
 } from './ReactFiberHostConfig';
 import type {SuspenseInstance} from './ReactFiberHostConfig';
-import {shouldSuspend} from './ReactFiberReconciler';
+import {shouldError, shouldSuspend} from './ReactFiberReconciler';
 import {pushHostContext, pushHostContainer} from './ReactFiberHostContext.old';
 import {
   suspenseStackCursor,
@@ -219,6 +222,8 @@ import {
   restoreSpawnedCachePool,
   getOffscreenDeferredCachePool,
 } from './ReactFiberCacheComponent.old';
+import {createCapturedValue} from './ReactCapturedValue';
+import {createClassErrorUpdate} from './ReactFiberThrow.old';
 import is from 'shared/objectIs';
 
 import {disableLogs, reenableLogs} from 'shared/ConsolePatchingDev';
@@ -552,7 +557,7 @@ function updateSimpleMemoComponent(
         // The pending lanes were cleared at the beginning of beginWork. We're
         // about to bail out, but there might be other lanes that weren't
         // included in the current render. Usually, the priority level of the
-        // remaining updates is accumlated during the evaluation of the
+        // remaining updates is accumulated during the evaluation of the
         // component (i.e. when processing the update queue). But since since
         // we're bailing out early *without* evaluating the component, we need
         // to account for it here, too. Reset to the value of the current fiber.
@@ -947,6 +952,38 @@ function updateClassComponent(
   renderLanes: Lanes,
 ) {
   if (__DEV__) {
+    // This is used by DevTools to force a boundary to error.
+    switch (shouldError(workInProgress)) {
+      case false: {
+        const instance = workInProgress.stateNode;
+        const ctor = workInProgress.type;
+        // TODO This way of resetting the error boundary state is a hack.
+        // Is there a better way to do this?
+        const tempInstance = new ctor(
+          workInProgress.memoizedProps,
+          instance.context,
+        );
+        const state = tempInstance.state;
+        instance.updater.enqueueSetState(instance, state, null);
+        break;
+      }
+      case true: {
+        workInProgress.flags |= DidCapture;
+        workInProgress.flags |= ShouldCapture;
+        const error = new Error('Simulated error coming from DevTools');
+        const lane = pickArbitraryLane(renderLanes);
+        workInProgress.lanes = mergeLanes(workInProgress.lanes, lane);
+        // Schedule the error boundary to re-render using updated state
+        const update = createClassErrorUpdate(
+          workInProgress,
+          createCapturedValue(error, workInProgress),
+          lane,
+        );
+        enqueueCapturedUpdate(workInProgress, update);
+        break;
+      }
+    }
+
     if (workInProgress.type !== workInProgress.elementType) {
       // Lazy component props can't be validated in createElement
       // because they're only guaranteed to be resolved here.
@@ -1653,7 +1690,7 @@ function validateFunctionComponentInDev(workInProgress: Fiber, Component: any) {
         info += '\n\nCheck the render method of `' + ownerName + '`.';
       }
 
-      let warningKey = ownerName || workInProgress._debugID || '';
+      let warningKey = ownerName || '';
       const debugSource = workInProgress._debugSource;
       if (debugSource) {
         warningKey = debugSource.fileName + ':' + debugSource.lineNumber;
@@ -1830,12 +1867,8 @@ function updateSuspenseComponent(current, workInProgress, renderLanes) {
       // This is a new mount or this boundary is already showing a fallback state.
       // Mark this subtree context as having at least one invisible parent that could
       // handle the fallback state.
-      // Boundaries without fallbacks or should be avoided are not considered since
-      // they cannot handle preferred fallback states.
-      if (
-        nextProps.fallback !== undefined &&
-        nextProps.unstable_avoidThisFallback !== true
-      ) {
+      // Avoided boundaries are not considered since they cannot handle preferred fallback states.
+      if (nextProps.unstable_avoidThisFallback !== true) {
         suspenseContext = addSubtreeSuspenseContext(
           suspenseContext,
           InvisibleParentSuspenseContext,
@@ -1873,22 +1906,18 @@ function updateSuspenseComponent(current, workInProgress, renderLanes) {
   if (current === null) {
     // Initial mount
     // If we're currently hydrating, try to hydrate this boundary.
-    // But only if this has a fallback.
-    if (nextProps.fallback !== undefined) {
-      tryToClaimNextHydratableInstance(workInProgress);
-      // This could've been a dehydrated suspense component.
-      if (enableSuspenseServerRenderer) {
-        const suspenseState: null | SuspenseState =
-          workInProgress.memoizedState;
-        if (suspenseState !== null) {
-          const dehydrated = suspenseState.dehydrated;
-          if (dehydrated !== null) {
-            return mountDehydratedSuspenseComponent(
-              workInProgress,
-              dehydrated,
-              renderLanes,
-            );
-          }
+    tryToClaimNextHydratableInstance(workInProgress);
+    // This could've been a dehydrated suspense component.
+    if (enableSuspenseServerRenderer) {
+      const suspenseState: null | SuspenseState = workInProgress.memoizedState;
+      if (suspenseState !== null) {
+        const dehydrated = suspenseState.dehydrated;
+        if (dehydrated !== null) {
+          return mountDehydratedSuspenseComponent(
+            workInProgress,
+            dehydrated,
+            renderLanes,
+          );
         }
       }
     }

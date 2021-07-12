@@ -9,11 +9,17 @@
 
 import * as React from 'react';
 import Icon from '../Icon';
+import {searchGitHubIssuesURL} from './githubAPI';
 import styles from './shared.css';
 
-function encodeURIWrapper(string: string): string {
-  return encodeURI(string).replace(/#/g, '%23');
-}
+const LABELS = [
+  'Component: Developer Tools',
+  'Type: Bug',
+  'Status: Unconfirmed',
+];
+
+// This must match the filename in ".github/ISSUE_TEMPLATE/"
+const TEMPLATE = 'devtools_bug_report.yml';
 
 type Props = {|
   callStack: string | null,
@@ -31,41 +37,24 @@ export default function ReportNewIssue({
     return null;
   }
 
-  const title = `Error: "${errorMessage || ''}"`;
-  const labels = ['Component: Developer Tools', 'Status: Unconfirmed'];
+  const gitHubAPISearch =
+    errorMessage !== null ? searchGitHubIssuesURL(errorMessage) : '(none)';
 
-  const body = `
-<!-- Please answer both questions below before submitting this issue. -->
+  const title = `[DevTools Bug] ${errorMessage || ''}`;
 
-### Which website or app were you using when the bug happened?
+  const parameters = [
+    `template=${TEMPLATE}`,
+    `labels=${encodeURIComponent(LABELS.join(','))}`,
+    `title=${encodeURIComponent(title)}`,
+    `automated_package=${process.env.DEVTOOLS_PACKAGE || ''}`,
+    `automated_version=${process.env.DEVTOOLS_VERSION || ''}`,
+    `automated_error_message=${encodeURIComponent(errorMessage || '')}`,
+    `automated_call_stack=${encodeURIComponent(callStack || '')}`,
+    `automated_component_stack=${encodeURIComponent(componentStack || '')}`,
+    `automated_github_query_string=${gitHubAPISearch}`,
+  ];
 
-Please provide a link to the URL of the website (if it is public), a CodeSandbox (https://codesandbox.io/s/new) example that reproduces the bug, or a project on GitHub that we can checkout and run locally.
-
-### What were you doing on the website or app when the bug happened?
-
-If possible, please describe how to reproduce this bug on the website or app mentioned above:
-1. <!-- FILL THIS IN -->
-2. <!-- FILL THIS IN -->
-3. <!-- FILL THIS IN -->
-
-<!--------------------------------------------------->
-<!-- Please do not remove the text below this line -->
-<!--------------------------------------------------->
-
-### Generated information
-
-DevTools version: ${process.env.DEVTOOLS_VERSION || ''}
-
-Call stack:
-${callStack || '(not available)'}
-
-Component stack:
-${componentStack || '(not available)'}
-  `;
-
-  bugURL += `/issues/new?labels=${encodeURIWrapper(
-    labels.join(','),
-  )}&title=${encodeURIWrapper(title)}&body=${encodeURIWrapper(body.trim())}`;
+  bugURL += `/issues/new?${parameters.join('&')}`;
 
   return (
     <div className={styles.GitHubLinkRow}>

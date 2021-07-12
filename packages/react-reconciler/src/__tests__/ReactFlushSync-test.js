@@ -1,6 +1,7 @@
 let React;
 let ReactNoop;
 let Scheduler;
+let act;
 let useState;
 let useEffect;
 let startTransition;
@@ -12,9 +13,10 @@ describe('ReactFlushSync', () => {
     React = require('react');
     ReactNoop = require('react-noop-renderer');
     Scheduler = require('scheduler');
+    act = require('jest-react').act;
     useState = React.useState;
     useEffect = React.useEffect;
-    startTransition = React.unstable_startTransition;
+    startTransition = React.startTransition;
   });
 
   function Text({text}) {
@@ -22,7 +24,6 @@ describe('ReactFlushSync', () => {
     return text;
   }
 
-  // @gate experimental || !enableSyncDefaultUpdates
   test('changes priority of updates in useEffect', async () => {
     function App() {
       const [syncState, setSyncState] = useState(0);
@@ -37,9 +38,9 @@ describe('ReactFlushSync', () => {
     }
 
     const root = ReactNoop.createRoot();
-    await ReactNoop.act(async () => {
+    await act(async () => {
       if (gate(flags => flags.enableSyncDefaultUpdates)) {
-        React.unstable_startTransition(() => {
+        React.startTransition(() => {
           root.render(<App />);
         });
       } else {
@@ -64,7 +65,6 @@ describe('ReactFlushSync', () => {
     expect(root).toMatchRenderedOutput('1, 1');
   });
 
-  // @gate experimental
   test('nested with startTransition', async () => {
     let setSyncState;
     let setState;
@@ -77,13 +77,13 @@ describe('ReactFlushSync', () => {
     }
 
     const root = ReactNoop.createRoot();
-    await ReactNoop.act(async () => {
+    await act(async () => {
       root.render(<App />);
     });
     expect(Scheduler).toHaveYielded(['0, 0']);
     expect(root).toMatchRenderedOutput('0, 0');
 
-    await ReactNoop.act(async () => {
+    await act(async () => {
       ReactNoop.flushSync(() => {
         startTransition(() => {
           // This should be async even though flushSync is on the stack, because
@@ -114,7 +114,7 @@ describe('ReactFlushSync', () => {
     }
 
     const root = ReactNoop.createRoot();
-    await ReactNoop.act(async () => {
+    await act(async () => {
       ReactNoop.flushSync(() => {
         root.render(<App />);
       });
@@ -137,7 +137,7 @@ describe('ReactFlushSync', () => {
     }
 
     const root = ReactNoop.createLegacyRoot();
-    await ReactNoop.act(async () => {
+    await act(async () => {
       ReactNoop.flushSync(() => {
         root.render(<App />);
       });
@@ -161,7 +161,7 @@ describe('ReactFlushSync', () => {
     }
 
     const root = ReactNoop.createRoot();
-    await ReactNoop.act(async () => {
+    await act(async () => {
       root.render(<App />);
       expect(Scheduler).toFlushUntilNextPaint([
         'Child',

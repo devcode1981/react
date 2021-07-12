@@ -13,6 +13,7 @@
 let React;
 let ReactNoop;
 let Scheduler;
+let act;
 
 describe('ReactIncrementalScheduling', () => {
   beforeEach(() => {
@@ -21,6 +22,7 @@ describe('ReactIncrementalScheduling', () => {
     React = require('react');
     ReactNoop = require('react-noop-renderer');
     Scheduler = require('scheduler');
+    act = require('jest-react').act;
   });
 
   function span(prop) {
@@ -85,7 +87,6 @@ describe('ReactIncrementalScheduling', () => {
     expect(ReactNoop).toMatchRenderedOutput(<span prop={5} />);
   });
 
-  // @gate experimental || !enableSyncDefaultUpdates
   it('works on deferred roots in the order they were scheduled', () => {
     const {useEffect} = React;
     function Text({text}) {
@@ -95,7 +96,7 @@ describe('ReactIncrementalScheduling', () => {
       return text;
     }
 
-    ReactNoop.act(() => {
+    act(() => {
       ReactNoop.renderToRootWithID(<Text text="a:1" />, 'a');
       ReactNoop.renderToRootWithID(<Text text="b:1" />, 'b');
       ReactNoop.renderToRootWithID(<Text text="c:1" />, 'c');
@@ -107,9 +108,9 @@ describe('ReactIncrementalScheduling', () => {
     expect(ReactNoop.getChildrenAsJSX('c')).toEqual('c:1');
 
     // Schedule deferred work in the reverse order
-    ReactNoop.act(() => {
+    act(() => {
       if (gate(flags => flags.enableSyncDefaultUpdates)) {
-        React.unstable_startTransition(() => {
+        React.startTransition(() => {
           ReactNoop.renderToRootWithID(<Text text="c:2" />, 'c');
           ReactNoop.renderToRootWithID(<Text text="b:2" />, 'b');
         });
@@ -126,7 +127,7 @@ describe('ReactIncrementalScheduling', () => {
       // Schedule last bit of work, it will get processed the last
 
       if (gate(flags => flags.enableSyncDefaultUpdates)) {
-        React.unstable_startTransition(() => {
+        React.startTransition(() => {
           ReactNoop.renderToRootWithID(<Text text="a:2" />, 'a');
         });
       } else {
@@ -146,7 +147,6 @@ describe('ReactIncrementalScheduling', () => {
     });
   });
 
-  // @gate experimental || !enableSyncDefaultUpdates
   it('schedules sync updates when inside componentDidMount/Update', () => {
     let instance;
 
@@ -186,7 +186,7 @@ describe('ReactIncrementalScheduling', () => {
     }
 
     if (gate(flags => flags.enableSyncDefaultUpdates)) {
-      React.unstable_startTransition(() => {
+      React.startTransition(() => {
         ReactNoop.render(<Foo />);
       });
     } else {
@@ -206,7 +206,7 @@ describe('ReactIncrementalScheduling', () => {
     ]);
 
     if (gate(flags => flags.enableSyncDefaultUpdates)) {
-      React.unstable_startTransition(() => {
+      React.startTransition(() => {
         instance.setState({tick: 2});
       });
     } else {
@@ -224,7 +224,6 @@ describe('ReactIncrementalScheduling', () => {
     ]);
   });
 
-  // @gate experimental || !enableSyncDefaultUpdates
   it('can opt-in to async scheduling inside componentDidMount/Update', () => {
     let instance;
     class Foo extends React.Component {
@@ -284,7 +283,7 @@ describe('ReactIncrementalScheduling', () => {
     // Increment the tick to 2. This will trigger an update inside cDU. Flush
     // the first update without flushing the second one.
     if (gate(flags => flags.enableSyncDefaultUpdates)) {
-      React.unstable_startTransition(() => {
+      React.startTransition(() => {
         instance.setState({tick: 2});
       });
 
@@ -315,7 +314,6 @@ describe('ReactIncrementalScheduling', () => {
     }
   });
 
-  // @gate experimental || !enableSyncDefaultUpdates
   it('performs Task work even after time runs out', () => {
     class Foo extends React.Component {
       state = {step: 1};
@@ -334,7 +332,7 @@ describe('ReactIncrementalScheduling', () => {
       }
     }
     if (gate(flags => flags.enableSyncDefaultUpdates)) {
-      React.unstable_startTransition(() => {
+      React.startTransition(() => {
         ReactNoop.render(<Foo />);
       });
     } else {
